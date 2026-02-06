@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Required Material - Liebherr Maintenance</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+<div class="container">
+<a class="navbar-brand" href="#">Liebherr Maintenance</a>
+<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+<span class="navbar-toggler-icon"></span>
+</button>
+<div class="collapse navbar-collapse" id="navbarNav">
+<ul class="navbar-nav me-auto">
+<li class="nav-item"><a class="nav-link" href="dashboard.html">Dashboard</a></li>
+<li class="nav-item"><a class="nav-link" href="pending.html">Pending Work</a></li>
+<li class="nav-item"><a class="nav-link" href="completed.html">Completed Work</a></li>
+<li class="nav-item"><a class="nav-link" href="required.html">Required Material</a></li>
+<li class="nav-item"><a class="nav-link" href="consumed.html">Consumed Material</a></li>
+<li class="nav-item"><a class="nav-link" href="admin.html">Admin Panel</a></li>
+<li class="nav-item"><a class="nav-link" href="profile.html">Profile</a></li>
+</ul>
+<button class="btn btn-danger" onclick="logout()">Logout</button>
+</div>
+</div>
+</nav>
+
+<div class="container mt-4">
+<h2>Required Material</h2>
+
+<form id="requiredForm" class="mb-4">
+<div class="row">
+<div class="col-md-6 mb-3">
+<input type="text" class="form-control" placeholder="Material Name" id="materialName" required>
+</div>
+<div class="col-md-6 mb-3">
+<input type="text" class="form-control" placeholder="Item Code" id="itemCode" required>
+</div>
+<div class="col-md-6 mb-3">
+<input type="number" class="form-control" placeholder="Quantity" id="quantity" required>
+</div>
+<div class="col-md-6 mb-3">
+<input type="date" class="form-control" id="reqDate" required>
+</div>
+<div class="col-md-6 mb-3">
+<input type="file" class="form-control" id="image" accept="image/*">
+</div>
+</div>
+<button type="submit" class="btn btn-primary btn-sm">Submit</button>
+</form>
+
+<table class="table table-striped" id="requiredTable">
+<thead>
+<tr>
+<th>Material Name</th>
+<th>Item Code</th>
+<th>Quantity</th>
+<th>Date</th>
+<th>Image</th>
+<th>Username</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+if (!localStorage.getItem('requiredMaterials')) {
+localStorage.setItem('requiredMaterials', JSON.stringify([]));
+}
+
+function getCurrentUser() {
+return sessionStorage.getItem('currentUser')
+? JSON.parse(sessionStorage.getItem('currentUser'))
+: null;
+}
+
+function isAdmin() {
+const user = getCurrentUser();
+return user && user.isAdmin;
+}
+
+function logout() {
+sessionStorage.removeItem('currentUser');
+window.location.href = 'login.html';
+}
+
+function checkLogin() {
+if (!getCurrentUser()) {
+window.location.href = 'login.html';
+}
+}
+
+function setTodayDateForRequired() {
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('reqDate').value = today;
+}
+
+function loadRequiredMaterials() {
+const materials = JSON.parse(localStorage.getItem('requiredMaterials')) || [];
+const tbody = document.querySelector('#requiredTable tbody');
+tbody.innerHTML = '';
+
+materials.forEach((material, index) => {
+const row = `
+<tr>
+<td>${material.materialName}</td>
+<td>${material.itemCode}</td>
+<td>${material.quantity}</td>
+<td>${material.date}</td>
+<td>${material.image ? `<img src="${material.image}" width="50">` : 'No Image'}</td>
+<td>${material.username}</td>
+<td>
+${isAdmin() ? `<button class="btn btn-danger btn-sm" onclick="removeRequired(${index})">Remove</button>` : ''}
+</td>
+</tr>`;
+tbody.innerHTML += row;
+});
+}
+
+function removeRequired(index) {
+const materials = JSON.parse(localStorage.getItem('requiredMaterials')) || [];
+materials.splice(index, 1);
+localStorage.setItem('requiredMaterials', JSON.stringify(materials));
+loadRequiredMaterials();
+}
+
+document.getElementById('requiredForm').addEventListener('submit', function(e) {
+e.preventDefault();
+
+const user = getCurrentUser();
+if (!user) return alert("Not logged in!");
+
+const material = {
+materialName: document.getElementById('materialName').value,
+itemCode: document.getElementById('itemCode').value,
+quantity: document.getElementById('quantity').value,
+date: document.getElementById('reqDate').value,
+image: document.getElementById('image').files[0]
+? URL.createObjectURL(document.getElementById('image').files[0])
+: null,
+username: user.username
+};
+
+const materials = JSON.parse(localStorage.getItem('requiredMaterials'));
+materials.push(material);
+localStorage.setItem('requiredMaterials', JSON.stringify(materials));
+
+loadRequiredMaterials();
+this.reset();
+setTodayDateForRequired();
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+checkLogin();
+loadRequiredMaterials();
+setTodayDateForRequired();
+});
+</script>
+</body>
+</html>
